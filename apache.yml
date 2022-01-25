@@ -50,4 +50,4 @@
                       keypair={{ keypair }}
                       count={{count}}
        register: ec2
----
+
