@@ -1,18 +1,53 @@
 ---
-- hosts: webservers 
-  become: True
-  tasks:
-    - name: Install packages
-      yum:
-        name: "httpd"
-        state: "present"
-    - name: Start Apache server
-      service:
-        name: httpd
-        state: started
-        enabled: True
-    - name: Deploy static website
-      copy:
-        src: index.html
-        dest: /var/www/html/
-...
+ - name:  provisioning EC2 instances using Ansible
+   hosts: localhost
+   connection: local
+   gather_facts: False
+   tags: provisioning
+
+   vars:
+     keypair: ansible_key_pair
+     instance_type: t2.micro
+     image: ami-0fb653ca2d3203ac1
+     wait: yes
+     group: webserver
+     count: 1
+     region: us-east-2
+     security_group: anmolqait1
+
+   tasks:
+
+     - name: Task # 1 - Create my security group
+       local_action:
+         module: ec2_group
+         name: "{{ security_group }}"
+         description: Security Group for webserver Servers
+         region: "{{ region }}"
+         rules:
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 8080
+              to_port: 8080
+              cidr_ip: 0.0.0.0/0
+            - proto: tcp
+              from_port: 80
+              to_port: 80
+              cidr_ip: 0.0.0.0/0
+         rules_egress:
+            - proto: all
+              cidr_ip: 0.0.0.0/0
+       register: basic_firewall
+     - name: Task # 2 Launch the new EC2 Instance
+       local_action:  ec2
+                      group={{ security_group }}
+                      instance_type={{ instance_type}}
+                      image={{ image }}
+                      wait=true
+                      region={{ region }}
+                      keypair={{ keypair }}
+                      count={{count}}
+       register: ec2
+---
